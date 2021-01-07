@@ -23,10 +23,25 @@ def getGenderAnnotations(raw_txt):
   
     return annotations
 
+def getTimeSpans(raw_txt):
+    spans = []
+    pattern = r'([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]|([0-1]?[0-9]|2[0-3]):[0-5][0-9]\s[aApP][mM]|([0-1]?[0-9]|2[0-3]):[0-5][0-9]|[0-1]?[0-9][aApP][mM]'
+    indexes = [(i.start(),i.end()) for i in re.finditer(pattern,raw_txt,flags=re.IGNORECASE)]
+    for t in indexes:
+        ne = {"properties":{"DATE-TIME-SUBTYPE":"TIME"}}
+        ne["start"] = t[0]
+        ne["end"] = t[1]
+        ne["tag"] = "DATE-TIME"
+        ne["extent"] = raw_txt[t[0]:t[1]]
+        spans.append(ne)
+    return spans
+    
+
 def getBasicAnnotations(raw_txt):
     allAnnotations = []
     allAnnotations.extend(getGenderAnnotations(raw_txt))
     allAnnotations.extend(getSpans(r'[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+',raw_txt,"EMAIL"))
+    allAnnotations.extend(getTimeSpans(raw_txt))
     
     return {"named_entity":sorted(allAnnotations,key=lambda x: x["start"])}
 
