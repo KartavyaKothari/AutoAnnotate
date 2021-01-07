@@ -17,7 +17,7 @@ def getSpans(pattern,offset,raw_txt,tag):
 
 def getGenderAnnotations(raw_txt):
     annotations = []
-    gender_words = ['he','she','his','him','man','woman','men','women','mr','mrs','brother','sister']
+    gender_words = ['he','her','she','his','him','man','woman','men','women','mr','mrs','brother','sister','wife','husband','uncle','male','female']
     for gender in gender_words:
         annotations.extend(getSpans(r'\b'+gender+r'\b',len(gender),raw_txt,"GENDER"))
   
@@ -30,7 +30,7 @@ def getBasicAnnotations(raw_txt):
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
-    ap.add_argument("--input", required=True, help="OpenEA base dir (in)")
+    ap.add_argument("--input", required=True, help="Input file path")
     av = ap.parse_args()
 
     with open(av.input, 'r') as json_file:
