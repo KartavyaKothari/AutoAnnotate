@@ -17,7 +17,7 @@ def getSpans(pattern,raw_txt,tag):
 
 def getGenderAnnotations(raw_txt):
     annotations = []
-    gender_words = ['he','her','she','his','him','man','woman','men','women','mr','mrs','brother','sister','wife','husband','uncle','male','female']
+    gender_words = ['he','her','she','his','him','man','woman','men','women','mr','mrs','brother','sister','wife','husband','uncle','male','female','son','daughter','father','mother']
     for gender in gender_words:
         annotations.extend(getSpans(r'\b'+gender+r'\b',raw_txt,"GENDER"))
   
