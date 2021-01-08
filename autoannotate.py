@@ -38,7 +38,7 @@ def getTimeSpans(raw_txt):
 
 def getDateSpans(raw_txt):
     spans = []
-    pattern = r'(((mon|tues?|wed(nes?)|thu(rs)?|fri|sat(ur)?|sun)(day)?)[,\s]*((jan|febr?)(uary)?|mar(ch)?|apr(il)?|may|june?|july?|aug(ust)?|sept?(ember)?|oct(ober)?|nov(ember)?|dec(ember)?)[,\s]?((0[1-9]|[12]\d|3[01])|([1-9]|[12]\d|3[01]))[,\s]*[12][0-9]{3})|(((mon|tues?|wed(nes?)|thr(us)?|fri|sat(ur)?|sun)(day)?)[,\s]*((jan|febr?)(uary)?|mar(ch)?|apr(il)?|may|june?|july?|aug(ust)?|sept?(ember)?|oct(ober)?|nov(ember)?|dec(ember)?)[,\s]?((0[1-9]|[12]\d|3[01])|([1-9]|[12]\d|3[01])))'
+    pattern = r'(((mon|tues?|wed(nes?)|thu(rs)?|fri|sat(ur)?|sun)(day)?)[,\s]*((jan|febr?)(uary)?|mar(ch)?|apr(il)?|may|june?|july?|aug(ust)?|sept?(ember)?|oct(ober)?|nov(ember)?|dec(ember)?)[,\s]?((0[1-9]|[12]\d|3[01])|([1-9]|[12]\d|3[01]))[,\s]*[12][0-9]{3})|(((mon|tues?|wed(nes?)|thu(rs)?|fri|sat(ur)?|sun)(day)?)[,\s]*((jan|febr?)(uary)?|mar(ch)?|apr(il)?|may|june?|july?|aug(ust)?|sept?(ember)?|oct(ober)?|nov(ember)?|dec(ember)?)[,\s]?((0[1-9]|[12]\d|3[01])|([1-9]|[12]\d|3[01])))|((jan|febr?)(uary)?|mar(ch)?|apr(il)?|may|june?|july?|aug(ust)?|sept?(ember)?|oct(ober)?|nov(ember)?|dec(ember)?)[,\s]*[12][0-9]{3}'
     indexes = [(i.start(),i.end()) for i in re.finditer(pattern,raw_txt,flags=re.IGNORECASE)]
     for t in indexes:
         ne = {"properties":{"DATE-TIME-SUBTYPE":"DATE"}}
@@ -50,13 +50,13 @@ def getDateSpans(raw_txt):
     return spans
     
     
+    
 def getBasicAnnotations(raw_txt):
     allAnnotations = []
     allAnnotations.extend(getGenderAnnotations(raw_txt))
     allAnnotations.extend(getSpans(r'[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+',raw_txt,"EMAIL"))
     allAnnotations.extend(getTimeSpans(raw_txt))
     allAnnotations.extend(getDateSpans(raw_txt))
-    #allAnnotations.extend(getMoreDateSpans(raw_txt))
     
     return {"named_entity":sorted(allAnnotations,key=lambda x: x["start"])}
 
