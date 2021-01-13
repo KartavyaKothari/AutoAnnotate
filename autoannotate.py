@@ -17,8 +17,9 @@ def getSpans(pattern,raw_txt,tag):
 
 def getGenderAnnotations(raw_txt):
     annotations = []
-    gender_words = ['he','her','she','his','him','man','woman','men','women','mr','mrs','brother','sister','wife','husband','uncle','male','female','son','daughter','father','mother', 'king', 'queen', 'himself', 'herself', 'motherhood', 'fatherhood', 'bitch', 'manhood', 'womanhood']
-    for gender in gender_words:
+    gender_words = ['lord','lady','sir','maam','ma\'am','madam','he','her','she','his','him','man','woman','men','women','mr','mrs','brother','sister','wife','husband','uncle','male','female','son','daughter','father','mother', 'king', 'queen', 'himself', 'herself', 'motherhood', 'fatherhood', 'bitch', 'manhood', 'womanhood']
+    
+    for gender in set(gender_words):
         annotations.extend(getSpans(r'\b'+gender+r'\b',raw_txt,"GENDER"))
   
     return annotations
@@ -38,7 +39,7 @@ def getTimeSpans(raw_txt):
 
 def getDateSpans(raw_txt):
     spans = []
-    pattern = r'(((mon|tues?|wed(nes?)|thu(rs)?|fri|sat(ur)?|sun)(day)?)[,\s]*((jan|febr?)(uary)?|mar(ch)?|apr(il)?|may|june?|july?|aug(ust)?|sept?(ember)?|oct(ober)?|nov(ember)?|dec(ember)?)[,\s]?((0[1-9]|[12]\d|3[01])|([1-9]|[12]\d|3[01]))[,\s]*[12][0-9]{3})|(((mon|tues?|wed(nes?)|thu(rs)?|fri|sat(ur)?|sun)(day)?)[,\s]*((jan|febr?)(uary)?|mar(ch)?|apr(il)?|may|june?|july?|aug(ust)?|sept?(ember)?|oct(ober)?|nov(ember)?|dec(ember)?)[,\s]?((0[1-9]|[12]\d|3[01])|([1-9]|[12]\d|3[01])))|((jan|febr?)(uary)?|mar(ch)?|apr(il)?|may|june?|july?|aug(ust)?|sept?(ember)?|oct(ober)?|nov(ember)?|dec(ember)?)[,\s]*[12][0-9]{3}'
+    pattern = r'(((mon|tues?|wed(nes?)|thu(rs)?|fri|sat(ur)?|sun)(day)?)[.,\s]*((jan|febr?)(uary)?|mar(ch)?|apr(il)?|may|june?|july?|aug(ust)?|sept?(ember)?|oct(ober)?|nov(ember)?|dec(ember)?)[.,\s]?((0[1-9]|[12]\d|3[01])|([1-9]|[12]\d|3[01]))[.,\s]*[12][0-9]{3})|(((mon|tues?|wed(nes?)|thu(rs)?|fri|sat(ur)?|sun)(day)?)[.,\s]*((jan|febr?)(uary)?|mar(ch)?|apr(il)?|may|june?|july?|aug(ust)?|sept?(ember)?|oct(ober)?|nov(ember)?|dec(ember)?)[.,\s]?((0[1-9]|[12]\d|3[01])|([1-9]|[12]\d|3[01])))|((jan|febr?)(uary)?|mar(ch)?|apr(il)?|may|june?|july?|aug(ust)?|sept?(ember)?|oct(ober)?|nov(ember)?|dec(ember)?)[.,\s]*[12][0-9]{3}'
     indexes = [(i.start(),i.end()) for i in re.finditer(pattern,raw_txt,flags=re.IGNORECASE)]
     for t in indexes:
         ne = {"properties":{"DATE-TIME-SUBTYPE":"DATE"}}
@@ -48,9 +49,22 @@ def getDateSpans(raw_txt):
         ne["extent"] = raw_txt[t[0]:t[1]]
         spans.append(ne)
     return spans
-    
+
+def getYearRangeSpans(raw_text):
+    spans = []
+    pattern = r'((19|20)\d{2})\s*((to)|-|(and))\s*((19|20)\d{2})'
+    indexes = [(i.start(),i.end()) for i in re.finditer(pattern,raw_txt,flags=re.IGNORECASE)]
+    for t in indexes:
+        ne = {"properties":{"DATE-TIME-SUBTYPE":"DATE"}}
+        ne["start"] = t[0]
+        ne["end"] = t[1]
+        ne["tag"] = "DATE-TIME"
+        ne["extent"] = raw_txt[t[0]:t[1]]
+        spans.append(ne)
+    return spans
+
 def getCountrySpans(raw_txt):
-    list_countries = [r'Afghanistan',r'Albania',r'Algeria',r'Andorra',r'Angola',r'Antigua\s&\sDeps',r'Argentina',r'Armenia',r'Australia',r'Austria',r'Azerbaijan',r'Bahamas',r'Bahrain',r'Bangladesh',r'Barbados',r'Belarus',r'Belgium',r'Belize',r'Benin',r'Bhutan',r'Bolivia',r'Bosnia\sHerzegovina',r'Botswana',r'Brazil',r'Brunei',r'Bulgaria',r'Burkina',r'Burundi',r'Cambodia',r'Cameroon',r'Canada',r'Cape\sVerde',r'Central\sAfrican\sRep',r'Chad',r'Chile',r'China',r'Colombia',r'Comoros',r'Congo',r'Congo',r'Costa\sRica',r'Croatia',r'Cuba',r'Cyprus',r'Czech\sRepublic',r'Denmark',r'Djibouti',r'Dominica',r'Dominican\sRepublic',r'East\sTimor',r'Ecuador',r'Egypt',r'El\sSalvador',r'Equatorial\sGuinea',r'Eritrea',r'Estonia',r'Ethiopia',r'Fiji',r'Finland',r'France',r'Gabon',r'Gambia',r'Georgia',r'Germany',r'Ghana',r'Greece',r'Grenada',r'Guatemala',r'Guinea',r'Guinea-Bissau',r'Guyana',r'Haiti',r'Honduras',r'Hungary',r'Iceland',r'India',r'Indonesia',r'Iran',r'Iraq',r'Ireland',r'Israel',r'Italy',r'Ivory\sCoast',r'Jamaica',r'Japan',r'Jordan',r'Kazakhstan',r'Kenya',r'Kiribati',r'Korea\sNorth',r'Korea\sSouth',r'Kosovo',r'Kuwait',r'Kyrgyzstan',r'Laos',r'Latvia',r'Lebanon',r'Lesotho',r'Liberia',r'Libya',r'Liechtenstein',r'Lithuania',r'Luxembourg',r'Macedonia',r'Madagascar',r'Malawi',r'Malaysia',r'Maldives',r'Mali',r'Malta',r'Marshall\sIslands',r'Mauritania',r'Mauritius',r'Mexico',r'Micronesia',r'Moldova',r'Monaco',r'Mongolia',r'Montenegro',r'Morocco',r'Mozambique',r'Myanmar',r'Namibia',r'Nauru',r'Nepal',r'Netherlands',r'New\sZealand',r'Nicaragua',r'Niger',r'Nigeria',r'Norway',r'Oman',r'Pakistan',r'Palau',r'Panama',r'Papua\sNew\sGuinea',r'Paraguay',r'Peru',r'Philippines',r'Poland',r'Portugal',r'Qatar',r'Romania',r'Russian\sFederation',r'Rwanda',r'St\sKitts\s&\sNevis',r'St\sLucia',r'Saint\sVincent\s&\sthe\sGrenadines',r'Samoa',r'San\sMarino',r'Sao\sTome\s&\sPrincipe',r'Saudi\sArabia',r'Senegal',r'Serbia',r'Seychelles',r'Sierra\sLeone',r'Singapore',r'Slovakia',r'Slovenia',r'Solomon\sIslands',r'Somalia',r'South\sAfrica',r'South\sSudan',r'Spain',r'Sri\sLanka',r'Sudan',r'Suriname',r'Swaziland',r'Sweden',r'Switzerland',r'Syria',r'Taiwan',r'Tajikistan',r'Tanzania',r'Thailand',r'Togo',r'Tonga',r'Trinidad\s&\sTobago',r'Tunisia',r'Turkey',r'Turkmenistan',r'Tuvalu',r'Uganda',r'Ukraine',r'United\sArab\sEmirates',r'United\sKingdom',r'United\sStates',r'\bu[\s.]*s.?\b',r'Uruguay',r'Uzbekistan',r'Vanuatu',r'Vatican\sCity',r'Venezuela',r'Vietnam',r'Yemen',r'Zambia',r'Zimbabwe']
+    list_countries = [r'Afghanistan',r'Albania',r'Algeria',r'Andorra',r'Angola',r'Antigua\s&\sDeps',r'Argentina',r'Armenia',r'Australia',r'Austria',r'Azerbaijan',r'Bahamas',r'Bahrain',r'Bangladesh',r'Barbados',r'Belarus',r'Belgium',r'Belize',r'Benin',r'Bhutan',r'Bolivia',r'Bosnia\sHerzegovina',r'Botswana',r'Brazil',r'britain',r'Brunei',r'Bulgaria',r'Burkina',r'Burundi',r'Cambodia',r'Cameroon',r'Canada',r'Cape\sVerde',r'Central\sAfrican\sRep',r'Chad',r'Chile',r'China',r'Colombia',r'Comoros',r'Congo',r'Congo',r'Costa\sRica',r'Croatia',r'Cuba',r'Cyprus',r'Czech\sRepublic',r'Denmark',r'Djibouti',r'Dominica',r'Dominican\sRepublic',r'East\sTimor',r'Ecuador',r'Egypt',r'El\sSalvador',r'Equatorial\sGuinea',r'Eritrea',r'Estonia',r'Ethiopia',r'Fiji',r'Finland',r'France',r'Gabon',r'Gambia',r'Georgia',r'Germany',r'Ghana',r'Greece',r'Grenada',r'Guatemala',r'Guinea',r'Guinea-Bissau',r'Guyana',r'Haiti',r'Honduras',r'Hungary',r'Iceland',r'India',r'Indonesia',r'Iran',r'Iraq',r'Ireland',r'Israel',r'Italy',r'Ivory\sCoast',r'Jamaica',r'Japan',r'Jordan',r'Kazakhstan',r'Kenya',r'Kiribati',r'Korea\sNorth',r'Korea\sSouth',r'Kosovo',r'Kuwait',r'Kyrgyzstan',r'Laos',r'Latvia',r'Lebanon',r'Lesotho',r'Liberia',r'Libya',r'Liechtenstein',r'Lithuania',r'Luxembourg',r'Macedonia',r'Madagascar',r'Malawi',r'Malaysia',r'Maldives',r'Mali',r'Malta',r'Marshall\sIslands',r'Mauritania',r'Mauritius',r'Mexico',r'Micronesia',r'Moldova',r'Monaco',r'Mongolia',r'Montenegro',r'Morocco',r'Mozambique',r'Myanmar',r'Namibia',r'Nauru',r'Nepal',r'Netherlands',r'New\sZealand',r'Nicaragua',r'Niger',r'Nigeria',r'Norway',r'Oman',r'Pakistan',r'Palau',r'Panama',r'Papua\sNew\sGuinea',r'Paraguay',r'Peru',r'Philippines',r'Poland',r'Portugal',r'Qatar',r'Romania',r'Russian\sFederation',r'Rwanda',r'St\sKitts\s&\sNevis',r'St\sLucia',r'Saint\sVincent\s&\sthe\sGrenadines',r'Samoa',r'San\sMarino',r'Sao\sTome\s&\sPrincipe',r'Saudi\sArabia',r'Senegal',r'Serbia',r'Seychelles',r'Sierra\sLeone',r'Singapore',r'Slovakia',r'Slovenia',r'Solomon\sIslands',r'Somalia',r'South\sAfrica',r'South\sSudan',r'Spain',r'Sri\sLanka',r'Sudan',r'Suriname',r'Swaziland',r'Sweden',r'Switzerland',r'Syria',r'Taiwan',r'Tajikistan',r'Tanzania',r'Thailand',r'Togo',r'Tonga',r'Trinidad\s&\sTobago',r'Tunisia',r'Turkey',r'Turkmenistan',r'Tuvalu',r'Uganda',r'Ukraine',r'United\sArab\sEmirates',r'\bU.?A.?E.?\b',r'United\sKingdom',r'\bU.?K.?\b',r'United\sStates',r'\bu[\s.]*s.?\b',r'Uruguay',r'Uzbekistan',r'Vanuatu',r'Vatican\sCity',r'Venezuela',r'Vietnam',r'Yemen',r'Zambia',r'Zimbabwe']
     spans = []
     for pattern in list_countries:
         indexes = [(i.start(),i.end()) for i in re.finditer(pattern,raw_txt,flags=re.IGNORECASE)]
@@ -63,6 +77,19 @@ def getCountrySpans(raw_txt):
             spans.append(ne)
     return spans
 
+def getPhoneSpans(raw_txt):
+    spans = []
+    pattern = r'\d(.|\s*|-)\d(.|\s*|-)\d(.|\s*|-)\d(.|\s*|-)\d(.|\s*|-)\d(.|\s*|-)\d(.|\s*|-)\d(.|\s*|-)\d(.|\s*|-)\d(.|\s*|-)'
+    indexes = [(i.start(),i.end()) for i in re.finditer(pattern,raw_txt,flags=re.IGNORECASE)]
+    for t in indexes:
+        ne = {}
+        ne["start"] = t[0]
+        ne["end"] = t[1]
+        ne["tag"] = "PHONE"
+        ne["extent"] = raw_txt[t[0]:t[1]]
+        spans.append(ne)
+    return spans
+
 def getBasicAnnotations(raw_txt):
     allAnnotations = []
     allAnnotations.extend(getGenderAnnotations(raw_txt))
@@ -70,6 +97,8 @@ def getBasicAnnotations(raw_txt):
     allAnnotations.extend(getTimeSpans(raw_txt))
     allAnnotations.extend(getDateSpans(raw_txt))
     allAnnotations.extend(getCountrySpans(raw_txt))
+    allAnnotations.extend(getYearRangeSpans(raw_txt))
+    allAnnotations.extend(getPhoneSpans(raw_txt))
     
     return {"named_entity":sorted(allAnnotations,key=lambda x: x["start"])}
 
