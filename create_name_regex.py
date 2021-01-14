@@ -19,5 +19,6 @@ if __name__ == '__main__':
         for word in name_list:
             if len(word)==0:
                 continue
+            re.sub('.','\.',word)
             outstr.append('\\b'+word.strip()+'\\b')
         f.write('|'.join(outstr))
