@@ -20,5 +20,6 @@ if __name__ == '__main__':
             if len(word)==0:
                 continue
             re.sub('.','\.',word)
+            re.sub(' ','\s',word)
             outstr.append('\\b'+word.strip()+'\\b')
         f.write('|'.join(outstr))
