@@ -79,7 +79,7 @@ def getCountrySpans(raw_txt):
 
 def getPhoneSpans(raw_txt):
     spans = []
-    pattern = r'\d(\.|\s*|\-)'
+    pattern = r'\d(\.|\s*|\-)\d(\.|\s*|\-)\d(\.|\s*|\-)\d(\.|\s*|\-)\d(\.|\s*|\-)\d(\.|\s*|\-)\d(\.|\s*|\-)\d(\.|\s*|\-)\d(\.|\s*|\-)\d(\.|\s*|\-)'
     indexes = [(i.start(),i.end()) for i in re.finditer(pattern,raw_txt,flags=re.IGNORECASE)]
     for t in indexes:
         ne = {}
