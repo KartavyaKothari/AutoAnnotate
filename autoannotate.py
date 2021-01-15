@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import re
+from readchar import readchar
 
 
 def getSpans(pattern, raw_txt, tag):
@@ -385,18 +386,103 @@ def getBasicAnnotations(raw_txt):
     return {"named_entity": sorted(allAnnotations, key=lambda x: x["start"])}
 
 
+def simp_span(annot):
+    if not annot:
+        return ''
+    return str(annot.get('start')) + '-' + str(annot.get('end'))
+
+def simp_tag(annot):
+    if not annot:
+        return ''
+    return (
+        annot.get('tag') + ' ' +
+        str(annot.get('properties', {}).get('ADDRESS-SUBTYPE') or '') +
+        str(annot.get('properties', {}).get('DATE-TIME-SUBTYPE') or '')
+    )
+
+def arbitrate(doc, context=50, width=50):
+    from rich import print
+    count = 0
+    canon = []
+    j_annot = sorted(doc['annotations']['named_entity'], key= lambda x: x['start'])
+    l_annot = sorted(doc['annotations_v2']['named_entity'], key= lambda x: x['start'])
+    k_annot = getBasicAnnotations(doc.get('raw_text'))['named_entity']
+    print(f"Get ready to cross check around {max(len(j_annot), len(l_annot))} docs")
+    readchar()
+    while j_annot and k_annot and l_annot:
+        cj, ck, cl = [None, None, None]
+        start = min(j_annot[0]['start'], k_annot[0]['start'], l_annot[0]['start'])
+        text = doc['raw_text']
+        if j_annot[0]['start'] == start:
+            cj = j_annot.pop(0)
+        if k_annot[0]['start'] == start:
+            ck = k_annot.pop(0)
+        if l_annot[0]['start'] == start:
+            cl = l_annot.pop(0)
+        end = (cj or ck or cl)['end']
+        print(f"[red]{text[start-context:start]}[/][yellow]{text[start:end+1]}[/][red]{text[end+1:end+context]}[/]")
+        print('')
+        print(f"{simp_tag(cj):<50} -- {simp_tag(ck):^50} -- {simp_tag(cl):>50}")
+        if cj == ck == cl:
+            c = 'j'  # any one of those
+        else:
+            c = readchar()
+        while c not in 'qjkls':
+            c = readchar()
+        if c == 'q':
+            raise KeyboardInterrupt
+        print(c)
+        if cj and c == 'j':
+            canon.append(cj)
+        elif ck and c == 'k':
+            canon.append(ck)
+        elif cl and c == 'l':
+            canon.append(cl)
+        end = canon[-1]['end']
+        while j_annot and j_annot[0]['start'] < end:
+            j_annot.pop(0)
+        while k_annot and k_annot[0]['start'] < end:
+            k_annot.pop(0)
+        while l_annot and l_annot[0]['start'] < end:
+            l_annot.pop(0)
+        print('\n')
+        count += 1
+        print(count)
+    return canon
+
+
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True, help="Input file path")
+    parser.add_argument("--arbitrate", action="store_true",
+                        help="Flag if file needs to be arbitrated.")
     args = parser.parse_args()
 
     with open(args.input, "r") as json_file:
         documents = [json.loads(i) for i in list(json_file)]
 
-    with open(args.input, "w") as json_file:
-        for document in documents:
-            document["annotations"] = getBasicAnnotations(document["raw_text"])
-            json_file.write(json.dumps(document) + "\n")
+    if args.arbitrate:
+        for doc in documents:
+            # TODO: Allow option of choosing doc
+            annots = arbitrate(doc)
+            doc["annotations"] = {
+                "named_entity": sorted(annots, key=lambda x: x["start"])
+            }
+        with open(args.input + '.new', "w") as json_file:
+            for doc in documents:
+                # TODO: Allow option of choosing doc
+                annots = arbitrate(doc)
+                doc["annotations"] = {
+                    "named_entity": sorted(annots, key=lambda x: x["start"])
+                }
+                json_file.write(json.dumps(doc) + "\n")
+    else:
+        with open(args.input, "w") as json_file:
+            for document in documents:
+                document["annotations"] = getBasicAnnotations(document["raw_text"])
+                json_file.write(json.dumps(document) + "\n")
 
 
 if __name__ == "__main__":
