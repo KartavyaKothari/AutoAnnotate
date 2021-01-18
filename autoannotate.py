@@ -70,7 +70,21 @@ def getGenderAnnotations(raw_txt):
 
 def getTimeSpans(raw_txt):
     spans = []
-    pattern = r"([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]|([0-1]?[0-9]|2[0-3]):[0-5][0-9]\s[aApP][mM]|([0-1]?[0-9]|2[0-3]):[0-5][0-9]|[0-1]?[0-9][aApP][mM]"
+
+    hour = r'([0-1]?[0-9]|2[0-3])'
+    minutes = r'([0-5][0-9])'
+    seconds = r'([0-5][0-9])'
+    suffix = r'([ap].?m.?)'
+
+    formats = []
+
+    formats.append(hour+r'[\.:\s*]?'+minutes+r'?[\.:\s]*'+seconds+r'[\.\s]*'+suffix)
+    formats.append(hour+r'[\.:\s*]?'+minutes+r'[\.\s]*'+suffix)
+    formats.append(hour+r'[\.:\s*]?'+minutes+r'[\.:\s]*'+seconds)
+    formats.append(hour+r'[\.-\s*]?'+suffix)
+
+    pattern = '|'.join(formats)
+
     indexes = [
         (i.start(), i.end()) for i in re.finditer(pattern, raw_txt, flags=re.IGNORECASE)
     ]
