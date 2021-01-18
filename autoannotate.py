@@ -109,11 +109,14 @@ def getDateSpans(raw_txt):
 
     formats = []
 
+    formats.append(day+r'\\'+month+r'\\'+year_large)
+    formats.append(month+r'\\'+day+r'\\'+year_large)
     formats.append(week_day+r'[\.,\s]*'+month+r'[\.,\s]*'+day+r'[\.,\s]*'+year_large)
     formats.append(week_day+r'[\.,\s]*'+month+r'[\.,\s]*'+day)
     formats.append(month+r'[\.,\s]*'+day+r'[\.,\s]*'+year_large)
     formats.append(day+r'[\-\s]?'+month)
     formats.append(month+r'[\.,\s]*'+day)
+    formats.append(month+r'[\.,\s]*'+year_large)
     formats.append(year_large+r'\s*((to)|-|(and))\s*'+year_large)
     formats.append(year_small)
 
