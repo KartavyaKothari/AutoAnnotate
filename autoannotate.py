@@ -81,7 +81,7 @@ def getTimeSpans(raw_txt):
     formats.append(hour+r'[\.:\s*]?'+minutes+r'?[\.:\s]*'+seconds+r'[\.\s]*'+suffix)
     formats.append(hour+r'[\.:\s*]?'+minutes+r'[\.\s]*'+suffix)
     formats.append(hour+r'[\.:\s*]?'+minutes+r'[\.:\s]*'+seconds)
-    formats.append(hour+r'[\.-\s*]?'+suffix)
+    formats.append(hour+r'[\.\-\s*]?'+suffix)
 
     pattern = '|'.join(formats)
 
