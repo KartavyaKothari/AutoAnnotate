@@ -14,12 +14,12 @@ if __name__ == '__main__':
 
     name_list = sorted(list(set(list(map(lambda x: x.lower(),content.split('\n'))))),key=len,reverse=True)
 
-    with open('outregex','w') as f:
+    with open('name_regex','w') as f:
         outstr = []
         for word in name_list:
             if len(word)==0:
                 continue
-            re.sub('.','\.',word)
-            re.sub(' ','\s',word)
+            word = re.sub(r'\.', '\.', word)
+            # word = re.sub(r'\s', '\\s', word)
             outstr.append('\\b'+word.strip()+'\\b')
         f.write('|'.join(outstr))
