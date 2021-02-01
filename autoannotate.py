@@ -67,6 +67,20 @@ def getGenderAnnotations(raw_txt):
 
     return annotations
 
+def getUnameAnnotations(raw_txt):
+    annotations = []
+    words = [
+        'kaxil',
+        'ctr',
+        'bhuvan',
+        'vagrant'
+    ]
+
+    for gender in set(words):
+        annotations.extend(getSpans(r"\b" + gender + r"\b", raw_txt, "USERNAME"))
+
+    return annotations
+
 
 def getTimeSpans(raw_txt):
     spans = []
@@ -78,15 +92,15 @@ def getTimeSpans(raw_txt):
 
     formats = []
 
-    formats.append(hour+r':'+minutes+r':'+seconds+r':'+suffix)
-    formats.append(hour+r'\s'+minutes+r'\s'+seconds+r'\s'+suffix)
+    formats.append(r'\b'+hour+r':'+minutes+r':'+seconds+r':'+suffix+r'\b')
+    formats.append(r'\b'+hour+r'\s'+minutes+r'\s'+seconds+r'\s'+suffix+r'\b')
 
-    formats.append(hour+r':'+minutes+r':'+suffix)
-    formats.append(hour+r'\s'+minutes+r'\s'+suffix)
+    formats.append(r'\b'+hour+r':'+minutes+r':'+suffix+r'\b')
+    formats.append(r'\b'+hour+r'\s'+minutes+r'\s'+suffix+r'\b')
 
-    formats.append(hour+r':'+minutes+r':'+seconds+r'\-?,\d*')
-    formats.append(hour+r':'+minutes+r':'+seconds)
-    formats.append(hour+r'[\.\-\s]'+suffix)
+    formats.append(r'\b'+hour+r':'+minutes+r':'+seconds+r'[\-\+]?,\d*'+r'\b')
+    formats.append(r'\b'+hour+r':'+minutes+r':'+seconds+r'\b')
+    formats.append(r'\b'+hour+r'[\.\-\s]'+suffix+r'\b')
 
     pattern = '|'.join(formats)
 
@@ -116,17 +130,23 @@ def getDateSpans(raw_txt):
 
     formats = []
 
-    formats.append(year_small+r'[\\|\-|/]'+month_digits+r'[\\|\-|/]'+day)
-    formats.append(year_small_digits+r'[\\|\-|/]'+month_digits+r'[\\|\-|/]'+day)
-    formats.append(day+r'[\\|\-|/]'+month_digits+r'[\\|\-|/]'+year_large)
-    formats.append(month_digits+r'[\\|\-|/]'+day+r'[\\|\-|/]'+year_large)
-    formats.append(week_day+r'[\.,\s]*'+month+r'[\.,\s]*'+day+r'[\.,\s]*'+year_large)
-    formats.append(week_day+r'[\.,\s]*'+month+r'[\.,\s]*'+day)
-    formats.append(month+r'[\.,\s]*'+day+r'[\.,\s]*'+year_large)
-    formats.append(day+r'[\-\s]?'+month)
-    formats.append(month+r'[\.,\s]*'+day)
-    formats.append(month+r'[\.,\s]*'+year_large)
-    formats.append(year_large+r'\s*((to)|\-|(and))\s*'+year_large)
+    formats.append(r'\b'+year_small+r'[\\|\-|/]'+month_digits+r'[\\|\-|/]'+day+r'\b')
+    formats.append(r'\b'+year_small_digits+r'[\\|\-|/]'+month_digits+r'[\\|\-|/]'+day+r'\b')
+    formats.append(r'\b'+day+r'[\\|\-|/]'+month_digits+r'[\\|\-|/]'+year_large+r'\b')
+    formats.append(r'\b'+month_digits+r'[\\|\-|/]'+day+r'[\\|\-|/]'+year_large+r'\b')
+
+    formats.append(r'\b'+year_small+r'[\\|\-|/]'+month+r'[\\|\-|/]'+day+r'\b')
+    formats.append(r'\b'+year_small_digits+r'[\\|\-|/]'+month+r'[\\|\-|/]'+day+r'\b')
+    formats.append(r'\b'+day+r'[\\|\-|/]'+month+r'[\\|\-|/]'+year_large+r'\b')
+    formats.append(r'\b'+month+r'[\\|\-|/]'+day+r'[\\|\-|/]'+year_large+r'\b')
+
+    formats.append(r'\b'+week_day+r'[\.,\s]*'+month+r'[\.,\s]*'+day+r'[\.,\s]*'+year_large+r'\b')
+    formats.append(r'\b'+week_day+r'[\.,\s]*'+month+r'[\.,\s]*'+day+r'\b')
+    formats.append(r'\b'+month+r'[\.,\s]*'+day+r'[\.,\s]*'+year_large+r'\b')
+    formats.append(r'\b'+day+r'[\-\s]?'+month+r'\b')
+    formats.append(r'\b'+month+r'[\.,\s]*'+day+r'\b')
+    formats.append(r'\b'+month+r'[\.,\s]*'+year_large+r'\b')
+    formats.append(r'\b'+year_large+r'\s*((to)|\-|(and))\s*'+year_large+r'\b')
     # formats.append(year_small)
 
     pattern = '|'.join(formats)
@@ -421,7 +441,7 @@ def getBasicAnnotations(raw_txt):
     allAnnotations = []
     allAnnotations.extend(getGenderAnnotations(raw_txt))
     allAnnotations.extend(
-        getSpans(r"[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+", raw_txt, "EMAIL")
+        getSpans(r"\b[a-zA-Z0-9+_.-]+@[a-zA-Z]+\.[a-zA-Z]+\b", raw_txt, "EMAIL")
     )
     allAnnotations.extend(getTimeSpans(raw_txt))
     allAnnotations.extend(getDateSpans(raw_txt))
@@ -429,6 +449,7 @@ def getBasicAnnotations(raw_txt):
     allAnnotations.extend(getStateSpans(raw_txt))
     # allAnnotations.extend(getPhoneSpans(raw_txt))
     allAnnotations.extend(getNameSpans(raw_txt))
+    allAnnotations.extend(getUnameAnnotations(raw_txt))
 
     return {"named_entity": sorted(allAnnotations, key=lambda x: x["start"])}
 
