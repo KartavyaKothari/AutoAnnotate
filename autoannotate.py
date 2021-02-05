@@ -457,7 +457,7 @@ def getBasicAnnotations(raw_txt):
 def simp_span(annot):
     if not annot:
         return ''
-    return str(annot.get('start')) + '-' + str(annot.get('end'))
+    return str(annot.get('extent'))
 
 def simp_tag(annot):
     if not annot:
@@ -468,6 +468,7 @@ def simp_tag(annot):
         str(annot.get('properties', {}).get('DATE-TIME-SUBTYPE') or '')
     )
 
+INF = float('inf')
 
 def arbitrate(doc, context=50, width=50):
     from rich import print
@@ -476,20 +477,26 @@ def arbitrate(doc, context=50, width=50):
     j_annot = sorted(doc['annotations']['named_entity'], key= lambda x: x['start'])
     l_annot = sorted(doc['annotations_v2']['named_entity'], key= lambda x: x['start'])
     k_annot = getBasicAnnotations(doc.get('raw_text'))['named_entity']
-    print(f"Get ready to cross check around {max(len(j_annot), len(l_annot))} docs")
+    print(f"Get ready to cross check around {max(len(j_annot), len(k_annot), len(l_annot))} docs. IS_PII_POSSIBLE={doc.get('is_pii_possible', 'Unknown')}")
     readchar()
-    while j_annot and k_annot and l_annot:
+    # import pdb; pdb.set_trace();
+    while j_annot or k_annot or l_annot:
         cj, ck, cl = [None, None, None]
-        start = min(j_annot[0]['start'], k_annot[0]['start'], l_annot[0]['start'])
+        start = INF
+        for c in j_annot, k_annot, l_annot:
+            # print(c)
+            if c:
+                start = min(start, c[0]['start'])
         text = doc['raw_text']
-        if j_annot[0]['start'] == start:
+        if j_annot and j_annot[0]['start'] == start:
             cj = j_annot.pop(0)
-        if k_annot[0]['start'] == start:
+        if k_annot and k_annot[0]['start'] == start:
             ck = k_annot.pop(0)
-        if l_annot[0]['start'] == start:
+        if l_annot and l_annot[0]['start'] == start:
             cl = l_annot.pop(0)
+        # print(cj, ck, cl)
         end = (cj or ck or cl)['end']
-        print(f"[red]{text[start-context:start]}[/][yellow]{text[start:end+1]}[/][red]{text[end+1:end+context]}[/]")
+        print(f"[red]{text[start-context:start]}[/][yellow]{text[start:end]}[/][red]{text[end:end+context]}[/]")
         print('')
         print(f"{simp_tag(cj):<50} -- {simp_tag(ck):^50} -- {simp_tag(cl):>50}")
         print(f"{simp_span(cj):<50} -- {simp_span(ck):^50} -- {simp_span(cl):>50}")
@@ -508,7 +515,12 @@ def arbitrate(doc, context=50, width=50):
             canon.append(ck)
         elif cl and c == 'l':
             canon.append(cl)
-        end = canon[-1]['end']
+        try:
+            end = canon[-1]['end']
+        except IndexError:
+            for c in cj, ck, cl:
+                if c:
+                    end = min(end, c['end'])
         while j_annot and j_annot[0]['start'] < end:
             j_annot.pop(0)
         while k_annot and k_annot[0]['start'] < end:
@@ -532,6 +544,9 @@ def main():
 
     with open(args.input, "r") as json_file:
         documents = [json.loads(i) for i in list(json_file)]
+        # for i, doc in enumerate(documents):
+            # print(i+1, doc['is_pii_possible'], doc['language'], doc['excecption_type'])
+        # import pdb; pdb.set_trace()
 
     if args.arbitrate:
         # TODO: Allow option of choosing doc
