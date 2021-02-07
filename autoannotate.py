@@ -102,18 +102,22 @@ def getTimeSpans(raw_txt):
     formats.append(r'\b'+hour+r':'+minutes+r':'+seconds+r'\b')
     formats.append(r'\b'+hour+r'[\.\-\s]'+suffix+r'\b')
 
-    pattern = '|'.join(formats)
-
-    indexes = [
-        (i.start(), i.end()) for i in re.finditer(pattern, raw_txt, flags=re.IGNORECASE)
+    patterns = [
+        '|'.join(formats),
+        r'\b1[3-7]\d{11}\b'  # for epoch timestamp
     ]
-    for t in indexes:
-        ne = {"properties": {"DATE-TIME-SUBTYPE": "TIME"}}
-        ne["start"] = t[0]
-        ne["end"] = t[1]
-        ne["tag"] = "DATE-TIME"
-        ne["extent"] = raw_txt[t[0] : t[1]]
-        spans.append(ne)
+
+    for pattern in patterns:
+        indexes = [
+            (i.start(), i.end()) for i in re.finditer(pattern, raw_txt, flags=re.IGNORECASE)
+        ]
+        for t in indexes:
+            ne = {"properties": {"DATE-TIME-SUBTYPE": "TIME"}}
+            ne["start"] = t[0]
+            ne["end"] = t[1]
+            ne["tag"] = "DATE-TIME"
+            ne["extent"] = raw_txt[t[0] : t[1]]
+            spans.append(ne)
     return spans
 
 
