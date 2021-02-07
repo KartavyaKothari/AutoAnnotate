@@ -119,7 +119,7 @@ def getTimeSpans(raw_txt):
 
 def getDateSpans(raw_txt):
     spans = []
-    
+
     week_day = r"((mon|tues?|wed(nes?)|thu(rs)?|fri|sat(ur)?|sun)(day)?)"
     month = r"((jan|febr?)(uary)?|mar(ch)?|apr(il)?|may|june?|july?|aug(ust)?|sept?(ember)?|oct(ober)?|nov(ember)?|dec(ember)?)"
     month_digits = r"(0?[1-9]|1[012])"
@@ -180,6 +180,22 @@ def getStateSpans(raw_txt):
             entity["tag"] = "ADDRESS"
             entity["extent"] = raw_txt[t[0] : t[1]]
             spans.append(entity)
+    return spans
+
+def getURLSpans(raw_txt):
+    pattern = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}//)(?:[^\s()<>\\]+|\(([^\s()<>\\]+|(\([^\s()<>\\]+\)))*\))+(?:\(([^\s()<>\\]+|(\([^\s()<>\\]+\)))*\)|[^\s`!()\[\]{};:'\".,<>\\?«»“”‘’]))"
+    spans = []
+    indexes = [
+        (i.start(), i.end())
+        for i in re.finditer(pattern, raw_txt, flags=re.IGNORECASE)
+    ]
+    for t in indexes:
+        entity = {}
+        entity["start"] = t[0]
+        entity["end"] = t[1]
+        entity["tag"] = "URL"
+        entity["extent"] = raw_txt[t[0] : t[1]]
+        spans.append(entity)
     return spans
 
 def getCountrySpans(raw_txt):
@@ -446,6 +462,7 @@ def getBasicAnnotations(raw_txt):
     allAnnotations.extend(getTimeSpans(raw_txt))
     allAnnotations.extend(getDateSpans(raw_txt))
     allAnnotations.extend(getCountrySpans(raw_txt))
+    allAnnotations.extend(getURLSpans(raw_txt))
     allAnnotations.extend(getStateSpans(raw_txt))
     # allAnnotations.extend(getPhoneSpans(raw_txt))
     allAnnotations.extend(getNameSpans(raw_txt))
