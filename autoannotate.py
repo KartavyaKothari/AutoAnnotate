@@ -102,24 +102,28 @@ def getTimeSpans(raw_txt):
     formats.append(r'\b'+hour+r':'+minutes+r':'+seconds+r'\b')
     formats.append(r'\b'+hour+r'[\.\-\s]'+suffix+r'\b')
 
-    pattern = '|'.join(formats)
-
-    indexes = [
-        (i.start(), i.end()) for i in re.finditer(pattern, raw_txt, flags=re.IGNORECASE)
+    patterns = [
+        '|'.join(formats),
+        r'\b1[3-7]\d{11}\b'  # for epoch timestamp
     ]
-    for t in indexes:
-        ne = {"properties": {"DATE-TIME-SUBTYPE": "TIME"}}
-        ne["start"] = t[0]
-        ne["end"] = t[1]
-        ne["tag"] = "DATE-TIME"
-        ne["extent"] = raw_txt[t[0] : t[1]]
-        spans.append(ne)
+
+    for pattern in patterns:
+        indexes = [
+            (i.start(), i.end()) for i in re.finditer(pattern, raw_txt, flags=re.IGNORECASE)
+        ]
+        for t in indexes:
+            ne = {"properties": {"DATE-TIME-SUBTYPE": "TIME"}}
+            ne["start"] = t[0]
+            ne["end"] = t[1]
+            ne["tag"] = "DATE-TIME"
+            ne["extent"] = raw_txt[t[0] : t[1]]
+            spans.append(ne)
     return spans
 
 
 def getDateSpans(raw_txt):
     spans = []
-    
+
     week_day = r"((mon|tues?|wed(nes?)|thu(rs)?|fri|sat(ur)?|sun)(day)?)"
     month = r"((jan|febr?)(uary)?|mar(ch)?|apr(il)?|may|june?|july?|aug(ust)?|sept?(ember)?|oct(ober)?|nov(ember)?|dec(ember)?)"
     month_digits = r"(0?[1-9]|1[012])"
@@ -180,6 +184,22 @@ def getStateSpans(raw_txt):
             entity["tag"] = "ADDRESS"
             entity["extent"] = raw_txt[t[0] : t[1]]
             spans.append(entity)
+    return spans
+
+def getURLSpans(raw_txt):
+    pattern = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}//)(?:[^\s()<>\\]+|\(([^\s()<>\\]+|(\([^\s()<>\\]+\)))*\))+(?:\(([^\s()<>\\]+|(\([^\s()<>\\]+\)))*\)|[^\s`!()\[\]{};:'\".,<>\\?«»“”‘’]))"
+    spans = []
+    indexes = [
+        (i.start(), i.end())
+        for i in re.finditer(pattern, raw_txt, flags=re.IGNORECASE)
+    ]
+    for t in indexes:
+        entity = {}
+        entity["start"] = t[0]
+        entity["end"] = t[1]
+        entity["tag"] = "URL"
+        entity["extent"] = raw_txt[t[0] : t[1]]
+        spans.append(entity)
     return spans
 
 def getCountrySpans(raw_txt):
@@ -446,6 +466,7 @@ def getBasicAnnotations(raw_txt):
     allAnnotations.extend(getTimeSpans(raw_txt))
     allAnnotations.extend(getDateSpans(raw_txt))
     allAnnotations.extend(getCountrySpans(raw_txt))
+    allAnnotations.extend(getURLSpans(raw_txt))
     allAnnotations.extend(getStateSpans(raw_txt))
     # allAnnotations.extend(getPhoneSpans(raw_txt))
     allAnnotations.extend(getNameSpans(raw_txt))
@@ -457,7 +478,7 @@ def getBasicAnnotations(raw_txt):
 def simp_span(annot):
     if not annot:
         return ''
-    return str(annot.get('start')) + '-' + str(annot.get('end'))
+    return str(annot.get('extent'))
 
 def simp_tag(annot):
     if not annot:
@@ -468,6 +489,8 @@ def simp_tag(annot):
         str(annot.get('properties', {}).get('DATE-TIME-SUBTYPE') or '')
     )
 
+INF = float('inf')
+
 def arbitrate(doc, context=50, width=50):
     from rich import print
     count = 0
@@ -475,23 +498,30 @@ def arbitrate(doc, context=50, width=50):
     j_annot = sorted(doc['annotations']['named_entity'], key= lambda x: x['start'])
     l_annot = sorted(doc['annotations_v2']['named_entity'], key= lambda x: x['start'])
     k_annot = getBasicAnnotations(doc.get('raw_text'))['named_entity']
-    print(f"Get ready to cross check around {max(len(j_annot), len(l_annot))} docs")
+    print(f"Get ready to cross check around {max(len(j_annot), len(k_annot), len(l_annot))} docs. IS_PII_POSSIBLE={doc.get('is_pii_possible', 'Unknown')}")
     readchar()
-    while j_annot and k_annot and l_annot:
+    # import pdb; pdb.set_trace();
+    while j_annot or k_annot or l_annot:
         cj, ck, cl = [None, None, None]
-        start = min(j_annot[0]['start'], k_annot[0]['start'], l_annot[0]['start'])
+        start = INF
+        for c in j_annot, k_annot, l_annot:
+            # print(c)
+            if c:
+                start = min(start, c[0]['start'])
         text = doc['raw_text']
-        if j_annot[0]['start'] == start:
+        if j_annot and j_annot[0]['start'] == start:
             cj = j_annot.pop(0)
-        if k_annot[0]['start'] == start:
+        if k_annot and k_annot[0]['start'] == start:
             ck = k_annot.pop(0)
-        if l_annot[0]['start'] == start:
+        if l_annot and l_annot[0]['start'] == start:
             cl = l_annot.pop(0)
+        # print(cj, ck, cl)
         end = (cj or ck or cl)['end']
-        print(f"[red]{text[start-context:start]}[/][yellow]{text[start:end+1]}[/][red]{text[end+1:end+context]}[/]")
+        print(f"[red]{text[start-context:start]}[/][yellow]{text[start:end]}[/][red]{text[end:end+context]}[/]")
         print('')
         print(f"{simp_tag(cj):<50} -- {simp_tag(ck):^50} -- {simp_tag(cl):>50}")
-        if cj == ck == cl:
+        print(f"{simp_span(cj):<50} -- {simp_span(ck):^50} -- {simp_span(cl):>50}")
+        if cj == cl and cj is not None:
             c = 'j'  # any one of those
         else:
             c = readchar()
@@ -506,7 +536,12 @@ def arbitrate(doc, context=50, width=50):
             canon.append(ck)
         elif cl and c == 'l':
             canon.append(cl)
-        end = canon[-1]['end']
+        try:
+            end = canon[-1]['end']
+        except IndexError:
+            for c in cj, ck, cl:
+                if c:
+                    end = min(end, c['end'])
         while j_annot and j_annot[0]['start'] < end:
             j_annot.pop(0)
         while k_annot and k_annot[0]['start'] < end:
@@ -530,16 +565,15 @@ def main():
 
     with open(args.input, "r") as json_file:
         documents = [json.loads(i) for i in list(json_file)]
+        # for i, doc in enumerate(documents):
+            # print(i+1, doc['is_pii_possible'], doc['language'], doc['excecption_type'])
+        # import pdb; pdb.set_trace()
 
     if args.arbitrate:
-        for doc in documents:
-            # TODO: Allow option of choosing doc
-            annots = arbitrate(doc)
-            doc["annotations"] = {
-                "named_entity": sorted(annots, key=lambda x: x["start"])
-            }
+        # TODO: Allow option of choosing doc
         with open(args.input + '.new', "w") as json_file:
-            for doc in documents:
+            for i, doc in enumerate(documents):
+                print(f"Doc {i+1} of {len(documents)}")
                 # TODO: Allow option of choosing doc
                 annots = arbitrate(doc)
                 doc["annotations"] = {
