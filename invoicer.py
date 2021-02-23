@@ -49,7 +49,7 @@ with open("invoice.csv", "w") as f:
             count += 1
             total += doc_price
             num_docs += 1
-            num_words = doclen
+            num_words += doclen
             file_total += doc_price
         f.writelines(f"\nDocuments: {num_docs}, Words: {num_words}, total: {file_total}\n\n")
     f.writelines(f"\nGrand Total, {total}")
